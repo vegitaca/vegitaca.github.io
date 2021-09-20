@@ -1,0 +1,115 @@
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta
+        name="viewport"
+        content= "initial-scale=1, maximum-scale=1, user-scaleable=no"/>
+        <!-- Base mapbox-->
+        <script src = "https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.js"></script>
+        <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.4.1/mapbox-gl.css"/>
+        <link rel="stylesheet" href="./css/style.css" type="text/css"/>
+
+        <!-- Mapbox Geocode-->
+        <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.min.js"></script>/>
+        <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.7.2/mapbox-gl-geocoder.css">
+
+
+    </head>
+    <body>
+        <div>
+            <div id="map">
+                <div id="button-map">
+                    <button class="button-change" onclick="changeMap('streets-v11')">Streets</button>
+                    <button class="button-change" onclick="changeMap('satellite-v9')">Satellite</button>
+                </div>
+
+            </div>
+            <script type="text/javascript">
+                mapboxgl.accessToken = 'pk.eyJ1IjoidmVnaXRhY2EiLCJhIjoiY2t0cjVvOHlyMTM0ejJ2cG5pZHdtcmQ0YiJ9.zN4iQUpFWLcCaUt29vL70w';
+                const map = new mapboxgl.Map({
+                    container : "map",
+                    style : "mapbox://styles/mapbox/streets-v11",
+                    center : [106.928726,-6.923700],
+                    zoom : 9
+                });
+
+                map.addControl(
+                    new MapboxGeocoder({
+                        accessToken : mapboxgl.accessToken, 
+                        mapboxgl : mapboxgl
+                    })
+                );
+
+                map.addControl(new mapboxgl.NavigationControl());
+                map.addControl(new mapboxgl.FullscreenControl());
+                map.addControl(
+                    new mapboxgl.GeolocateControl({
+                        positionOptions : {
+                            enableHughAccuracy :true
+                        },
+                        trackUserLocation :false,
+                        showUserHeading : true
+                    })
+                )
+
+                map.once('load', function(){
+                    let geolocate = document.getElementsByClassName("mapboxgl-ctrl-geolocate");
+                    setTimeout(function(){
+                        geolocate[0].click();
+                    },20);
+                    getLayers();
+                })
+
+                function changeMap(basemap){
+                    map.setStyle("mapbox://styles/mapbox/" + basemap);
+                }
+
+                async function getLayers(){
+                    let geojson = getOnlineData();
+                    map.addSource("src-rth-bandung",{
+                        type: "geojson",
+                        data: geojson
+                    });
+
+                    map.addLayer({
+                        id: "lyr-rth-bandung",
+                        type: "fill",
+                        source: "src-rth-bandung",
+                        paint: {
+                            //"fill-color":"#00FFFF"
+                            "fill-color": [
+                                "interpolate",
+                                ["linear"],
+                                ["to-number",["get","skortotbob"]],
+                                3, "green",
+                                2, "yellow",
+                                1, "red"
+                            ],
+                            
+                            "fill-outline-color": "red",
+                            "fill-opacity" : 0.7
+                        }
+                    });
+                    
+                }
+
+                async function getOnlineData(){
+                    try{
+                        let geojson;
+                        await fetch("https://server.mapid.io/layers_new/get_layer_list?api_key=48cc65b01d4641768f835e35936dcec4&project_id=61481bae02ffff0e2ef161c4",
+                        {method : "GET"}
+                    ).then((response) => response.json()) 
+                    .then((data) => geojson = data.geojson);
+                    console.log(geojson);
+                        return geojson;
+                    }catch(err){
+                        console.log(err)
+                    }
+
+                    
+                }
+
+            </script>
+        </div>
+    </body>
+</html>
